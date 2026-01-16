@@ -1,3 +1,6 @@
 [submodule "wav-lpddr-hw"]
 	path = wav-lpddr-hw
-	url = https://github.com/waviousllc/wav-lpddr-hw.git
+	url = https://github.com/minhson/wav-lpddr-hw.git
+[submodule "wav-lpddr-sw"]
+	path = wav-lpddr-sw
+	url = https://github.com/minhson/wav-lpddr-sw.git
