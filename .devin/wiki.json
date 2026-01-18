@@ -1,200 +1,172 @@
 {
   "repo_notes": [
     {
-      "content": "This repository is an LPDDR4 memory subsystem: (1) LPDDR4 memory controller RTL (protocol interfaces → scheduler/bank machines → DFI adapter), (2) DDR PHY implementation and integration in wav-lpddr-hw/ (DFI-facing + physical layer timing/IO), (3) PHY configuration/control software in wav-lpddr-sw/ (init/training/config sequences), and (4) external LPDDR4 DRAM devices as the physical target. The wiki MUST describe the end-to-end architecture and data/control paths across these four blocks and their interfaces (especially DFI). Treat wav-lpddr-hw/ and wav-lpddr-sw/ as vendored source code inside this repo, not submodules."
+      "content": "This repo is an LPDDR4 memory subsystem with four blocks: (A) LPDDR4 controller RTL (protocol IFs → arbitration/scheduling/bank machines → DFI adapter), (B) DDR PHY RTL in wav-lpddr-hw/ (DFI-facing + physical-layer timing/IO), (C) PHY init/training/config SW in wav-lpddr-sw/, and (D) external LPDDR4 DRAM devices. Treat wav-lpddr-hw/ and wav-lpddr-sw/ as vendored code inside this repo (NOT submodules). The wiki must explain end-to-end control/data paths across A↔B↔D and the SW control path C→B (and any C→A register programming)."
     }
   ],
   "pages": [
     {
       "title": "Overview",
-      "purpose": "Introduce the repository and provide a high-level end-to-end picture: protocol interfaces → LPDDR4 controller → DFI → Wavious PHY (HW+SW) → LPDDR4 DRAM devices.",
+      "purpose": "High-level intro and what problem this subsystem solves. Summarize the four blocks (controller RTL, PHY RTL, PHY SW, DRAM device) and what each is responsible for.",
       "page_notes": [
         {
-          "content": "Include a single block diagram and a short explanation of what lives in controller RTL vs wav-lpddr-hw vs wav-lpddr-sw vs external DRAM."
+          "content": "Include a short glossary: controller, DFI, PHY, training, LPDDR4 device, 4-phase."
+        }
+      ]
+    },
+    {
+      "title": "Getting Started",
+      "purpose": "How to build/sim/run basic tests. Point to the minimal steps to instantiate the controller+PHY and run a sanity read/write flow.",
+      "page_notes": [
+        {
+          "content": "Prefer concrete entrypoints: top modules, build scripts, sim targets, and where to change key parameters (timing/config)."
         }
       ]
     },
     {
       "title": "System Architecture",
-      "purpose": "Explain the overall system architecture, showing how all major components connect and interact, from protocol interfaces through to physical memory.",
+      "purpose": "Explain the overall end-to-end architecture from host transactions down to DRAM pins, including the PHY HW/SW and DFI boundary.",
       "page_notes": [
         {
-          "content": "Must include wav-lpddr-hw/ and wav-lpddr-sw/ in the top-level architecture diagram and narrative. Show boundary: controller RTL (mc_core/mc_top/DFI adapter) ↔ DFI bus ↔ PHY (wav-lpddr-hw) ↔ DRAM device. Also mention PHY control path via wav-lpddr-sw (init/training/config)."
+          "content": "Generate 3 SMALL readable diagrams (not 1 giant graph): (1) End-to-end block diagram: Host/SoC → Controller → DFI → Wavious PHY → LPDDR4 DRAM. (2) Controller internal diagram: Protocol IFs → xbar → bank machines → scheduler/refresh → DFI adapter. (3) PHY HW/SW diagram: wav-lpddr-sw (init/training) → programs wav-lpddr-hw → drives DRAM signals. Keep labels short (<=4 words) and move details into bullets."
         }
       ]
     },
     {
-      "title": "DDR PHY (Wavious) Integration",
-      "purpose": "Explain how the memory controller connects to the Wavious DDR PHY: DFI signal mapping, clocking/reset, bring-up, integration boundary, and verification hooks.",
+      "title": "End-to-End Data and Command Flow",
+      "purpose": "Trace one READ and one WRITE end-to-end: external interface → internal scheduling → DFI phases → PHY IO → DRAM → return data.",
       "parent": "System Architecture",
       "page_notes": [
         {
-          "content": "Document both wav-lpddr-hw/ and wav-lpddr-sw/ as first-class components. Include block diagram: Protocol IFs → Controller Core → DFI → Wavious PHY → LPDDR4 DRAM."
+          "content": "Explicitly separate: command path (ACT/RD/WR/PRE/REF) vs data path (write data beats, read data return). Call out where timing constraints gate progress."
         }
       ]
     },
     {
-      "title": "Wavious PHY RTL (wav-lpddr-hw)",
-      "purpose": "Document wav-lpddr-hw/: top-level modules, DFI-facing interface, LPDDR4 PHY timing/IO responsibilities, and how the controller’s DFI adapter drives it.",
-      "parent": "DDR PHY (Wavious) Integration",
-      "page_notes": [
-        {
-          "content": "Start from the PHY top module(s) and list key submodules: DFI interface block, timing/modeling blocks, IO/serialization blocks, and calibration/training hooks exposed to SW."
-        }
-      ]
-    },
-    {
-      "title": "Wavious PHY Software (wav-lpddr-sw)",
-      "purpose": "Document wav-lpddr-sw/: what software/firmware exists, how it configures the PHY, initialization/training flow, and how it coordinates with controller registers/DFI bring-up.",
-      "parent": "DDR PHY (Wavious) Integration",
-      "page_notes": [
-        {
-          "content": "Focus on init sequence, training/calibration steps, register programming model, and SW↔controller/PHY boundary."
-        }
-      ]
-    },
-    {
-      "title": "LPDDR4 DRAM Devices",
-      "purpose": "Describe the external LPDDR4 DRAM device view: channels/ranks/banks/rows/cols, command set, timing assumptions, and how controller+PHY jointly meet requirements.",
+      "title": "Memory Controller RTL Top",
+      "purpose": "Document controller top-level modules and integration boundaries (mc_top/mc_core equivalents), including ports, clocks/resets, and how sub-blocks connect.",
       "parent": "System Architecture",
       "page_notes": [
         {
-          "content": "Tie device-level concepts back to controller blocks (bank machines, refresher, timing enforcement) and PHY responsibilities (signal timing/IO)."
-        }
-      ]
-    },
-    {
-      "title": "Memory Controller Core",
-      "purpose": "Detail the mc_core and mc_top modules and how they integrate all subsystems (interfaces, scheduler, bank machines, DFI adapter).",
-      "parent": "System Architecture",
-      "page_notes": [
-        {
-          "content": "Clearly separate control-path (commands/timing) from data-path (read/write datapath). Mention key clocks/resets."
-        }
-      ]
-    },
-    {
-      "title": "Data Flow Pipeline",
-      "purpose": "Trace end-to-end data flow: external interfaces → protocol conversion → arbitration → bank machines → scheduler → DFI adapter → PHY → DRAM.",
-      "parent": "System Architecture",
-      "page_notes": [
-        {
-          "content": "Must explicitly mention the boundary between controller RTL and wav-lpddr-hw at DFI, and where wav-lpddr-sw participates in bring-up."
+          "content": "Identify the controller entrypoint module(s) and list the major instantiated submodules and their responsibilities."
         }
       ]
     },
     {
       "title": "Protocol Interfaces",
-      "purpose": "Overview of external protocol interfaces (AHB/AXI/Wishbone/Native) including use-cases and how each converts into the controller internal request format.",
+      "purpose": "Explain how external masters connect: AHB/AXI/Wishbone/Native. Describe what each is used for and how each converts into internal requests.",
+      "parent": "Memory Controller RTL Top",
       "page_notes": [
         {
-          "content": "Combine what used to be separate pages (AHB, AXI, Wishbone, Native) into sections on this single page to stay within the 30-page limit."
+          "content": "Organize as sections per interface; include a small table of: bus → width → purpose → conversion module."
         }
       ]
     },
     {
-      "title": "DFI Physical Interface",
-      "purpose": "Detail the DFI interface (including 4-phase) used between controller and PHY, and how it maps to LPDDR4 operations.",
-      "parent": "Protocol Interfaces",
+      "title": "DFI Interface",
+      "purpose": "Explain DFI at the controller↔PHY boundary, including the 4-phase concept and which signals carry commands vs write/read data.",
+      "parent": "System Architecture",
       "page_notes": [
         {
-          "content": "Describe how DFI connects specifically to wav-lpddr-hw/: which DFI signals/phases are used, how commands/data map, and what timing/handshake expectations exist."
-        }
-      ]
-    },
-    {
-      "title": "Core Components",
-      "purpose": "Describe the controller’s major internal blocks and how they cooperate: crossbar, bank machines, scheduler/mux, refresher, DFI adapter.",
-      "page_notes": [
-        {
-          "content": "This is a high-level chapter page; detailed behavior goes into the next few pages."
-        }
-      ]
-    },
-    {
-      "title": "Crossbar Arbiter",
-      "purpose": "Explain arbitration and routing from multiple protocol inputs toward the bank machines.",
-      "parent": "Core Components",
-      "page_notes": [
-        {
-          "content": "Cover fairness/priority, backpressure, and how bursts/transactions are handled."
-        }
-      ]
-    },
-    {
-      "title": "Bank Machines",
-      "purpose": "Explain the per-bank state machines: row tracking, row-hit vs row-miss handling, auto-precharge decisions, and per-bank timing counters.",
-      "parent": "Core Components",
-      "page_notes": [
-        {
-          "content": "Make the row-buffer policy and timing counter logic explicit; show typical state transitions."
-        }
-      ]
-    },
-    {
-      "title": "Command Scheduler and Refresh",
-      "purpose": "Explain global scheduling: selecting among bank-machine commands, enforcing global timing constraints, managing read/write turnarounds, and integrating refresh.",
-      "parent": "Core Components",
-      "page_notes": [
-        {
-          "content": "Merge the old 'Command Multiplexer' + 'Refresh Controller' topics into this single page."
+          "content": "Must tie DFI directly to wav-lpddr-hw implementation: what DFI signals/phases are consumed/produced by the PHY, what handshake/valid rules exist, and how command+data align."
         }
       ]
     },
     {
       "title": "DFI Adapter",
-      "purpose": "Explain how internal DDR commands are translated into DFI transactions/phases and driven toward the PHY.",
-      "parent": "Core Components",
+      "purpose": "Explain how internal controller commands are translated into DFI (phasing, packing, timing alignment), and how read/write data beats are handled.",
+      "parent": "DFI Interface",
       "page_notes": [
         {
-          "content": "Explicitly call out the per-phase packaging and alignment rules; connect back to DFI Physical Interface page."
+          "content": "Include one worked example: internal READ/WRITE → per-phase CA/cmd → wrdata/rddata timing relationship."
         }
       ]
     },
     {
-      "title": "Transactions and Formats",
-      "purpose": "Document the internal request/command/data structures and how they evolve through the pipeline into physical operations.",
+      "title": "Scheduling and Bank Machines",
+      "purpose": "Explain crossbar arbitration, per-bank state machines, row buffer policy, auto-precharge decisions, and global scheduling/turnaround.",
+      "parent": "Memory Controller RTL Top",
       "page_notes": [
         {
-          "content": "Merge what used to be multiple pages: request/command formats + DDR command types into one chapter page with sections."
+          "content": "Prefer a single state-transition diagram for bank machine behavior and a short bullet list of enforced constraints (tRCD, tRP, tRAS, tWTR, etc.)."
         }
       ]
     },
     {
-      "title": "Address Mapping",
-      "purpose": "Explain address mapping from system address to bank/row/column and how that impacts bank machines and row buffer behavior.",
-      "parent": "Transactions and Formats",
+      "title": "Refresh and Timing Enforcement",
+      "purpose": "Explain refresh behavior (tREFI/tRFC), how refresh interacts with banks/scheduler, and how timing counters prevent illegal command sequences.",
+      "parent": "Memory Controller RTL Top",
       "page_notes": [
         {
-          "content": "Include a worked example mapping if possible."
+          "content": "Include a short section: where timing parameters live (CSR/config) and which module consumes them."
         }
       ]
     },
     {
-      "title": "Timing, Registers, and Constraints",
-      "purpose": "Explain DRAM timing parameters, CSR/configuration registers, and how timing constraints are enforced across bank-machine and scheduler levels.",
+      "title": "Configuration and CSR Map",
+      "purpose": "Document configuration registers (addresses/fields) and what they control (timing, refresh, bank machine knobs, PHY-related config if any).",
+      "parent": "Memory Controller RTL Top",
       "page_notes": [
         {
-          "content": "Merge old pages: DRAM Timing Parameters + Configuration Register Map + Timing Constraint Enforcement into this single chapter page."
+          "content": "If registers are numerous, group into tables by function (timing, refresh, debug/status, init)."
         }
       ]
     },
     {
-      "title": "Clock Domain Crossing",
-      "purpose": "Explain CDC bridges/FIFOs (e.g., AHB config clock ↔ system clock) and how configuration safely reaches the controller datapath/control logic.",
-      "parent": "Timing, Registers, and Constraints",
+      "title": "DDR PHY Integration (Wavious)",
+      "purpose": "Explain how controller connects to Wavious PHY and what each side guarantees: clocks/resets, DFI signals, IO timing responsibilities, bring-up sequence boundaries.",
+      "parent": "System Architecture",
       "page_notes": [
         {
-          "content": "Clarify which interfaces run in which clock domains and how resets are handled."
+          "content": "Clearly define the contract: controller produces DFI; PHY consumes DFI and drives CA/DQ/DQS; PHY returns rddata/valid. Mention any init/training hooks that SW triggers."
         }
       ]
     },
     {
-      "title": "Memory Operations",
-      "purpose": "Explain how read/write/refresh operations execute end-to-end, including command sequencing and datapath behavior.",
+      "title": "Wavious PHY RTL (wav-lpddr-hw)",
+      "purpose": "Document wav-lpddr-hw/: top module(s), internal blocks (DFI receiver, timing/IO drivers), and how they map to LPDDR4 pins.",
+      "parent": "DDR PHY Integration (Wavious)",
       "page_notes": [
         {
-          "content": "Merge old pages: Command Sequencing + Row Buffer Management + Read/Write Operations + Refresh Operations as sections on this single page."
+          "content": "Start from the PHY top module(s). List key submodules: DFI interface, per-lane IO, CA/DQ/DQS handling, any calibration/training interfaces exposed upward."
+        }
+      ]
+    },
+    {
+      "title": "Wavious PHY Software (wav-lpddr-sw)",
+      "purpose": "Document wav-lpddr-sw/: initialization flow, training (write leveling/read training), and how it programs PHY registers (and any controller registers).",
+      "parent": "DDR PHY Integration (Wavious)",
+      "page_notes": [
+        {
+          "content": "Provide a step-by-step init/training sequence and the key register groups it touches. Show where SW runs (host CPU/firmware) and when it must execute relative to controller traffic."
+        }
+      ]
+    },
+    {
+      "title": "LPDDR4 DRAM Device View",
+      "purpose": "Explain DRAM organization and device-facing requirements: banks/rows/cols, command set expectations, and timing from the device perspective.",
+      "parent": "System Architecture",
+      "page_notes": [
+        {
+          "content": "Tie device requirements back to controller blocks (bank machines/refresh/timing) and PHY blocks (IO timing)."
+        }
+      ]
+    },
+    {
+      "title": "Verification and Simulation",
+      "purpose": "Explain verification structure: testbenches, models, how to run regression/smoke tests, and how to validate controller↔PHY integration.",
+      "page_notes": [
+        {
+          "content": "Include recommended debug signals/log points at each boundary: protocol IF, internal commands, DFI, PHY IO, rddata return."
+        }
+      ]
+    },
+    {
+      "title": "Repository Guide",
+      "purpose": "Map repository directories to responsibilities: where controller RTL lives, where wav-lpddr-hw lives, where wav-lpddr-sw lives, where tests/docs live.",
+      "page_notes": [
+        {
+          "content": "Add a short 'Where do I change X?' section: timing params, DFI width/phases, init flow, training knobs."
         }
       ]
     }
